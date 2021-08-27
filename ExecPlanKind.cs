@@ -1,7 +1,7 @@
 ﻿namespace BitmaskExpressions
 {
     /// <summary>
-    /// The mode with which a node a node can be executed
+    /// Represents the operation to be performance by an ExecPlan node.
     /// </summary>
     enum ExecPlanKind
     {
@@ -27,17 +27,23 @@
 
         /// <summary>
         /// The node can't be evaluated directly by bitwise math
-        /// and must be split into a multiple operations that must
-        /// all be true
+        /// and must be split into a multiple operations. The result
+        /// is true if all input plans are true.
         /// </summary>
         EvalAnd,
 
         /// <summary>
         /// The node can't be evaluated directly by bitwise math
-        /// and must be split into a multiple operations
+        /// and must be split into a multiple operations. The result
+        /// is true if any input plan is true.
         /// </summary>
         EvalOr,
 
+        /// <summary>
+        /// The node can't be evaluated directly by bitwise math
+        /// and must be split into a multiple operations.  The result
+        /// is the opposite of the input plan result.
+        /// </summary>
         EvalNot,
     }
 }

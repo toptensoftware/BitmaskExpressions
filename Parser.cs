@@ -27,7 +27,7 @@ namespace BitmaskExpressions
         /// <returns>The AstNode for the expression</returns>
         public AstNode ParseExpression()
         {
-            var node = ParseBooleanOr();
+            var node = ParseExpressionNode();
             if (_tokenizer.CurrentToken != Token.EOF)
             {
                 throw new InvalidDataException($"Syntax error, expected EOF not {_tokenizer.CurrentToken}");
@@ -36,35 +36,60 @@ namespace BitmaskExpressions
         }
 
         /// <summary>
-        /// Parse a leaf node (either an identifier or parenthesized expression)
+        /// Parse an expression node
+        /// </summary>
+        /// <returns></returns>
+        AstNode ParseExpressionNode()
+        {
+            return ParseBooleanOr();
+        }
+
+        /// <summary>
+        /// Parse a chain or Boolean Or operators
         /// </summary>
         /// <returns>An AstNode</returns>
-        AstNode ParseLeaf()
+        AstNode ParseBooleanOr()
         {
-            switch (_tokenizer.CurrentToken)
+            var lhs = ParseBooleanAnd();
+
+            if (_tokenizer.CurrentToken == Token.OperatorOr)
             {
-                case Token.Identifier:
-                {
-                    var node = new AstNodeIdentifier(_tokenizer.IdentifierBit);
-                    _tokenizer.NextToken();
-                    return node;
-                }
-
-                case Token.OpenRound:
+                var orOp = new AstNodeOr();
+                orOp.AddOperand(lhs);
+                while (_tokenizer.CurrentToken == Token.OperatorOr)
                 {
                     _tokenizer.NextToken();
-                    var node = ParseBooleanOr();
-                    if (_tokenizer.CurrentToken != Token.CloseRound)
-                    {
-                        throw new InvalidDataException($"Syntax error, expected close round not {_tokenizer.CurrentToken}");
-                    }
-                    _tokenizer.NextToken();
-                    return node;
+                    orOp.AddOperand(ParseBooleanAnd());
                 }
-
-                default:
-                    throw new InvalidDataException($"Unexpected token in input stream: {_tokenizer.CurrentToken}");
+                orOp.Simplify();
+                return orOp;
             }
+
+            return lhs;
+        }
+
+        /// <summary>
+        /// Parse a chain or Boolean And operators
+        /// </summary>
+        /// <returns>An AstNode</returns>
+        AstNode ParseBooleanAnd()
+        {
+            var lhs = ParseUnary();
+
+            if (_tokenizer.CurrentToken == Token.OperatorAnd)
+            {
+                var andOp = new AstNodeAnd();
+                andOp.AddOperand(lhs);
+                while (_tokenizer.CurrentToken == Token.OperatorAnd)
+                {
+                    _tokenizer.NextToken();
+                    andOp.AddOperand(ParseUnary());
+                }
+                andOp.Simplify();
+                return andOp;
+            }
+
+            return lhs;
         }
 
         /// <summary>
@@ -86,51 +111,36 @@ namespace BitmaskExpressions
         }
 
         /// <summary>
-        /// Parse a chain or Boolean And operators
+        /// Parse a leaf node (either an identifier or parenthesized expression)
         /// </summary>
         /// <returns>An AstNode</returns>
-        AstNode ParseBooleanAnd()
+        AstNode ParseLeaf()
         {
-            var lhs = ParseUnary();
-
-            if (_tokenizer.CurrentToken == Token.OperatorAnd)
+            switch (_tokenizer.CurrentToken)
             {
-                var andOp = new AstNodeAnd();
-                andOp.AddOperand(lhs);
-                while (_tokenizer.CurrentToken == Token.OperatorAnd)
-                {
-                    _tokenizer.NextToken();
-                    andOp.AddOperand(ParseUnary());
-                }
-                return andOp;
+                case Token.Identifier:
+                    {
+                        var node = new AstNodeIdentifier(_tokenizer.Identifier);
+                        _tokenizer.NextToken();
+                        return node;
+                    }
+
+                case Token.OpenRound:
+                    {
+                        _tokenizer.NextToken();
+                        var node = ParseExpressionNode();
+                        if (_tokenizer.CurrentToken != Token.CloseRound)
+                        {
+                            throw new InvalidDataException($"Syntax error, expected close round not {_tokenizer.CurrentToken}");
+                        }
+                        _tokenizer.NextToken();
+                        return node;
+                    }
+
+                default:
+                    throw new InvalidDataException($"Unexpected token in input stream: {_tokenizer.CurrentToken}");
             }
-
-            return lhs;
         }
-
-        /// <summary>
-        /// Parse a chain or Boolean Or operators
-        /// </summary>
-        /// <returns>An AstNode</returns>
-        AstNode ParseBooleanOr()
-        {
-            var lhs = ParseBooleanAnd();
-
-            if (_tokenizer.CurrentToken == Token.OperatorOr)
-            {
-                var orOp = new AstNodeOr();
-                orOp.AddOperand(lhs);
-                while (_tokenizer.CurrentToken == Token.OperatorOr)
-                {
-                    _tokenizer.NextToken();
-                    orOp.AddOperand(ParseBooleanAnd());
-                }
-                return orOp;
-            }
-
-            return lhs;
-        }
-
 
         Tokenizer _tokenizer;
     }

@@ -19,35 +19,48 @@ namespace BitmaskExpressions
         }
 
         /// <summary>
+        /// Get the execution plan for an expression
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="bitNames">Bit name to mask mapper</param>
+        /// <returns>An execution plan</returns>
+        public ExecPlan GetExecPlan(AstNode node, IBitNames bitNames)
+        {
+            _bitNames = bitNames;
+            return GetExecPlan(node);
+        }
+
+        /// <summary>
         /// Get the execution plan for a node
         /// </summary>
         /// <param name="node"></param>
-        /// <returns></returns>
-        public ExecPlan GetExecPlan(AstNode node)
+        /// <returns>An execution plan</returns>
+        ExecPlan GetExecPlan(AstNode node)
         {
             return node.Visit(this);
         }
 
-        public ExecPlan Visit(AstNodeIdentifier node)
+        ExecPlan IAstNodeVisitor<ExecPlan>.Visit(AstNodeIdentifier node)
         {
-            return new ExecPlan(ExecPlanKind.MaskEqual, node.Bit, node.Bit);
+            var bit = _bitNames.BitFromName(node.Name);
+            return new ExecPlan(ExecPlanKind.MaskEqual, bit, bit);
         }
 
-        public ExecPlan Visit(AstNodeAnd node)
+        ExecPlan IAstNodeVisitor<ExecPlan>.Visit(AstNodeAnd node)
         {
             // Get plans for every node
-            var plans = node.Operands.Select(x => GetExecPlan(x).TryConvertMaskEqual()).ToList();
+            var plans = node.Operands.Select(x => GetExecPlan(x).ConvertMaskEqualIfCan()).ToList();
 
             // If any node is false, then result is false
-            if (plans.Any(x => x.Mode == ExecPlanKind.False))
+            if (plans.Any(x => x.Kind == ExecPlanKind.False))
                 return new ExecPlan(ExecPlanKind.False);
 
             // If all nodes are true, then result is true
-            if (plans.All(x => x.Mode == ExecPlanKind.True))
+            if (plans.All(x => x.Kind == ExecPlanKind.True))
                 return new ExecPlan(ExecPlanKind.True);
 
             // Remove any nodes that are true as they don't contribute anything
-            plans.RemoveAll(x => x.Mode == ExecPlanKind.True);
+            plans.RemoveAll(x => x.Kind == ExecPlanKind.True);
 
             // Combine any MaskEqual plans
             uint newMask = 0;
@@ -55,7 +68,7 @@ namespace BitmaskExpressions
             for (int i = plans.Count - 1; i >= 0; i--)
             {
                 var p = plans[i];
-                if (p.Mode == ExecPlanKind.MaskEqual)
+                if (p.Kind == ExecPlanKind.MaskEqual)
                 {
                     // Remove from the collection
                     plans.RemoveAt(i);
@@ -84,21 +97,21 @@ namespace BitmaskExpressions
             return new ExecPlan(ExecPlanKind.EvalAnd, plans);
         }
 
-        public ExecPlan Visit(AstNodeOr node)
+        ExecPlan IAstNodeVisitor<ExecPlan>.Visit(AstNodeOr node)
         {
             // Get plans for every node
-            var plans = node.Operands.Select(x => GetExecPlan(x).TryConvertMaskNotEqual()).ToList();
+            var plans = node.Operands.Select(x => GetExecPlan(x).ConvertMaskNotEqualIfCan()).ToList();
 
             // If any node is true, then result is true
-            if (plans.Any(x => x.Mode == ExecPlanKind.True))
+            if (plans.Any(x => x.Kind == ExecPlanKind.True))
                 return new ExecPlan(ExecPlanKind.True);
 
             // If all nodes are false, then result is false
-            if (plans.All(x => x.Mode == ExecPlanKind.False))
+            if (plans.All(x => x.Kind == ExecPlanKind.False))
                 return new ExecPlan(ExecPlanKind.False);
 
             // Remove any nodes that are false as they don't contribute anything
-            plans.RemoveAll(x => x.Mode == ExecPlanKind.False);
+            plans.RemoveAll(x => x.Kind == ExecPlanKind.False);
 
             // Combine MaskNotEqual plans
             uint newMask = 0;
@@ -106,7 +119,7 @@ namespace BitmaskExpressions
             for (int i = plans.Count - 1; i >= 0; i--)
             {
                 var p = plans[i];
-                if (p.Mode == ExecPlanKind.MaskNotEqual)
+                if (p.Kind == ExecPlanKind.MaskNotEqual)
                 {
                     // Remove from list
                     plans.RemoveAt(i);
@@ -134,13 +147,13 @@ namespace BitmaskExpressions
             return new ExecPlan(ExecPlanKind.EvalOr, plans);
         }
 
-        public ExecPlan Visit(AstNodeNot node)
+        ExecPlan IAstNodeVisitor<ExecPlan>.Visit(AstNodeNot node)
         {
             // Get the input plan
             var inPlan = GetExecPlan(node.Operand);
 
             // Handle input mode
-            switch (inPlan.Mode)
+            switch (inPlan.Kind)
             {
                 case ExecPlanKind.True:
                     return new ExecPlan(ExecPlanKind.False);
@@ -158,5 +171,7 @@ namespace BitmaskExpressions
             // Eval directly
             return new ExecPlan(ExecPlanKind.EvalNot, new List<ExecPlan>() { inPlan });
         }
+
+        IBitNames _bitNames;
     }
 }

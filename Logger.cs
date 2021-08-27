@@ -33,13 +33,13 @@ namespace BitmaskExpressions
             Console.WriteLine($"{new string(' ', _indent * 2)}{str}");
         }
 
-        public bool Visit(AstNodeIdentifier node)
+        bool IAstNodeVisitor<bool>.Visit(AstNodeIdentifier node)
         {
-            WriteLine($"Identifier 0x{node.Bit:X2}");
+            WriteLine($"Identifier '{node.Name}'");
             return true;
         }
 
-        public bool Visit(AstNodeAnd node)
+        bool IAstNodeVisitor<bool>.Visit(AstNodeAnd node)
         {
             WriteLine($"AND");
             foreach (var o in node.Operands)
@@ -47,7 +47,7 @@ namespace BitmaskExpressions
             return true;
         }
 
-        public bool Visit(AstNodeOr node)
+        bool IAstNodeVisitor<bool>.Visit(AstNodeOr node)
         {
             WriteLine($"OR");
             foreach (var o in node.Operands)
@@ -55,7 +55,7 @@ namespace BitmaskExpressions
             return true;
         }
 
-        public bool Visit(AstNodeNot node)
+        bool IAstNodeVisitor<bool>.Visit(AstNodeNot node)
         {
             WriteLine($"NOT");
             Log(node.Operand);

@@ -19,7 +19,7 @@ namespace BitmaskExpressions
         /// <param name="value">The value</param>
         public ExecPlan(ExecPlanKind kind, uint mask = 0, uint value = 0)
         {
-            Mode = kind;
+            Kind = kind;
             Mask = mask;
             Value = value;
         }
@@ -28,17 +28,17 @@ namespace BitmaskExpressions
         /// Constructs a new node plan
         /// </summary>
         /// <param name="kind">The plan mode</param>
-        /// <param name="subPlans">The input plans</param>
-        public ExecPlan(ExecPlanKind kind, List<ExecPlan> subPlans)
+        /// <param name="inputPlans">The input plans</param>
+        public ExecPlan(ExecPlanKind kind, List<ExecPlan> inputPlans)
         {
-            Mode = kind;
-            SubPlans = subPlans;
+            Kind = kind;
+            InputPlans = inputPlans;
         }
 
         /// <summary>
-        /// The mode
+        /// The kind of execution plan
         /// </summary>
-        public ExecPlanKind Mode;
+        public ExecPlanKind Kind;
 
         /// <summary>
         /// The mask for MaskAndValue and MaskAndNZ
@@ -51,19 +51,19 @@ namespace BitmaskExpressions
         public uint Value;
 
         /// <summary>
-        /// A list of subplans for nodes that can't be executed
-        /// directly through bit operations
+        /// A list of input plans for nodes that can't be executed
+        /// directly through bit operations (EvalAnd, EvalOr and EvalNot)
         /// </summary>
-        public List<ExecPlan> SubPlans;
+        public List<ExecPlan> InputPlans;
 
         /// <summary>
         /// Try to convert a MaskNotEqual plan to MaskEqual
         /// (can only do this when a single bit is set)
         /// </summary>
         /// <returns>A converted plan, or the same plan</returns>
-        public ExecPlan TryConvertMaskEqual()
+        public ExecPlan ConvertMaskEqualIfCan()
         {
-            if (Mode != ExecPlanKind.MaskNotEqual)
+            if (Kind != ExecPlanKind.MaskNotEqual)
                 return this;
 
             if (IsSingleBit(Mask))
@@ -79,9 +79,9 @@ namespace BitmaskExpressions
         /// (can only do this when a single bit is set)
         /// </summary>
         /// <returns>A converted plan, or the same plan</returns>
-        public ExecPlan TryConvertMaskNotEqual()
+        public ExecPlan ConvertMaskNotEqualIfCan()
         {
-            if (Mode != ExecPlanKind.MaskEqual)
+            if (Kind != ExecPlanKind.MaskEqual)
                 return this;
 
             if (IsSingleBit(Mask))
@@ -99,18 +99,18 @@ namespace BitmaskExpressions
         /// <returns>The result of the expression</returns>
         public bool Evaluate(uint input)
         {
-            switch (Mode)
+            switch (Kind)
             {
                 case ExecPlanKind.True: return true;
                 case ExecPlanKind.False: return false;
                 case ExecPlanKind.MaskEqual: return (input & Mask) == Value;
                 case ExecPlanKind.MaskNotEqual: return (input & Mask) != Value;
-                case ExecPlanKind.EvalAnd: return SubPlans.All(x => x.Evaluate(input));
-                case ExecPlanKind.EvalOr: return SubPlans.Any(x => x.Evaluate(input));
-                case ExecPlanKind.EvalNot: return !SubPlans[0].Evaluate(input);
+                case ExecPlanKind.EvalAnd: return InputPlans.All(x => x.Evaluate(input));
+                case ExecPlanKind.EvalOr: return InputPlans.Any(x => x.Evaluate(input));
+                case ExecPlanKind.EvalNot: return !InputPlans[0].Evaluate(input);
             }
 
-            throw new InvalidOperationException("Can't convert eval plan to function");
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -129,15 +129,15 @@ namespace BitmaskExpressions
         /// <returns>A string description</returns>
         public override string ToString()
         {
-            switch (Mode)
+            switch (Kind)
             {
-                case ExecPlanKind.True: return "True";
-                case ExecPlanKind.False: return "False";
-                case ExecPlanKind.MaskEqual: return $"(input & 0x{Mask:X2}) == 0x{Value:X2}";
-                case ExecPlanKind.MaskNotEqual: return $"(input & 0x{Mask:X2}) != 0x{Value:X2}";
-                case ExecPlanKind.EvalAnd: return string.Join(" && ", SubPlans.Select(x => $"({x})"));
-                case ExecPlanKind.EvalOr: return string.Join(" || ", SubPlans.Select(x => $"({x})"));
-                case ExecPlanKind.EvalNot: return $"!({SubPlans[0]})";
+                case ExecPlanKind.True: return "true";
+                case ExecPlanKind.False: return "false";
+                case ExecPlanKind.MaskEqual: return $"(input & 0x{Mask:X}) == 0x{Value:X}";
+                case ExecPlanKind.MaskNotEqual: return $"(input & 0x{Mask:X}) != 0x{Value:X}";
+                case ExecPlanKind.EvalAnd: return string.Join(" && ", InputPlans.Select(x => $"({x})"));
+                case ExecPlanKind.EvalOr: return string.Join(" || ", InputPlans.Select(x => $"({x})"));
+                case ExecPlanKind.EvalNot: return $"!({InputPlans[0]})";
             }
             throw new NotImplementedException();
         }
