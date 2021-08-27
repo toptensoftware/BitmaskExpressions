@@ -35,9 +35,9 @@ AND
       +-- Bananas
 ```
 
-How to convert that AST optimal set of bitmask/test operations?
+How to convert that AST into an optimal set of bitmask and test operations?
 
-The only required operators are AND, OR, NOT and (parenthesis)
+The only required expression operators are `AND`, `OR` and `NOT`.
 
 
 ## Sandbox
@@ -60,7 +60,7 @@ Given an expression it will:
 5. Test the execution plan by executing over a range of integers 0-15 and 
    comparing to a non-optimized evaluation of the same expression
    
-   
+
 ## Sample Output
 
 ```
