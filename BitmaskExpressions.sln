@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31402.337
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BitmaskExpressions", "BitmaskExpressions.csproj", "{F3E7D226-0756-424F-AFBA-2937159ED1F7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F3E7D226-0756-424F-AFBA-2937159ED1F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3E7D226-0756-424F-AFBA-2937159ED1F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3E7D226-0756-424F-AFBA-2937159ED1F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3E7D226-0756-424F-AFBA-2937159ED1F7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CB2B8A21-7596-4629-96DC-8BEC5C743ADF}
+	EndGlobalSection
+EndGlobal
