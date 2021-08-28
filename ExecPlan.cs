@@ -17,11 +17,11 @@ namespace BitmaskExpressions
         /// <param name="kind">The plan mode</param>
         /// <param name="mask">The mask</param>
         /// <param name="value">The value</param>
-        public ExecPlan(ExecPlanKind kind, uint mask = 0, uint value = 0)
+        public ExecPlan(ExecPlanKind kind, ulong mask = 0, ulong value = 0)
         {
             Kind = kind;
             Mask = mask;
-            Value = value;
+            TestValue = value;
         }
 
         /// <summary>
@@ -43,12 +43,12 @@ namespace BitmaskExpressions
         /// <summary>
         /// The mask for MaskAndValue and MaskAndNZ
         /// </summary>
-        public uint Mask;
+        public ulong Mask;
 
         /// <summary>
-        /// The value for MaskAndValue
+        /// The test value for MaskAndValue
         /// </summary>
-        public uint Value;
+        public ulong TestValue;
 
         /// <summary>
         /// A list of input plans for nodes that can't be executed
@@ -68,7 +68,7 @@ namespace BitmaskExpressions
 
             if (IsSingleBit(Mask))
             {
-                return new ExecPlan(ExecPlanKind.MaskEqual, Mask, Value ^ Mask);
+                return new ExecPlan(ExecPlanKind.MaskEqual, Mask, TestValue ^ Mask);
             }
 
             return this;
@@ -86,7 +86,7 @@ namespace BitmaskExpressions
 
             if (IsSingleBit(Mask))
             {
-                return new ExecPlan(ExecPlanKind.MaskNotEqual, Mask, Value ^ Mask);
+                return new ExecPlan(ExecPlanKind.MaskNotEqual, Mask, TestValue ^ Mask);
             }
 
             return this;
@@ -97,16 +97,27 @@ namespace BitmaskExpressions
         /// </summary>
         /// <param name="input">The input number</param>
         /// <returns>The result of the expression</returns>
-        public bool Evaluate(uint input)
+        public bool Evaluate(ulong input)
         {
             switch (Kind)
             {
-                case ExecPlanKind.True: return true;
-                case ExecPlanKind.False: return false;
-                case ExecPlanKind.MaskEqual: return (input & Mask) == Value;
-                case ExecPlanKind.MaskNotEqual: return (input & Mask) != Value;
-                case ExecPlanKind.EvalAnd: return InputPlans.All(x => x.Evaluate(input));
-                case ExecPlanKind.EvalOr: return InputPlans.Any(x => x.Evaluate(input));
+                case ExecPlanKind.True: 
+                    return true;
+
+                case ExecPlanKind.False: 
+                    return false;
+
+                case ExecPlanKind.MaskEqual: 
+                    return (input & Mask) == TestValue;
+
+                case ExecPlanKind.MaskNotEqual: 
+                    return (input & Mask) != TestValue;
+
+                case ExecPlanKind.EvalAnd: 
+                    return InputPlans.All(x => x.Evaluate(input));
+
+                case ExecPlanKind.EvalOr: 
+                    return InputPlans.Any(x => x.Evaluate(input));
                 case ExecPlanKind.EvalNot: return !InputPlans[0].Evaluate(input);
             }
 
@@ -114,13 +125,14 @@ namespace BitmaskExpressions
         }
 
         /// <summary>
-        /// Check if a uint has exactly one bit set
+        /// Check if a ulong has exactly one bit set
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static bool IsSingleBit(uint value)
+        public static bool IsSingleBit(ulong value)
         {
-            return System.Runtime.Intrinsics.X86.Popcnt.PopCount(value) == 1;
+            return (System.Runtime.Intrinsics.X86.Popcnt.PopCount((uint)value) + 
+                    System.Runtime.Intrinsics.X86.Popcnt.PopCount((uint)(value >> 32))) == 1;
         }
 
         /// <summary>
@@ -133,8 +145,8 @@ namespace BitmaskExpressions
             {
                 case ExecPlanKind.True: return "true";
                 case ExecPlanKind.False: return "false";
-                case ExecPlanKind.MaskEqual: return $"(input & 0x{Mask:X}) == 0x{Value:X}";
-                case ExecPlanKind.MaskNotEqual: return $"(input & 0x{Mask:X}) != 0x{Value:X}";
+                case ExecPlanKind.MaskEqual: return $"(input & 0x{Mask:X}) == 0x{TestValue:X}";
+                case ExecPlanKind.MaskNotEqual: return $"(input & 0x{Mask:X}) != 0x{TestValue:X}";
                 case ExecPlanKind.EvalAnd: return string.Join(" && ", InputPlans.Select(x => $"({x})"));
                 case ExecPlanKind.EvalOr: return string.Join(" || ", InputPlans.Select(x => $"({x})"));
                 case ExecPlanKind.EvalNot: return $"!({InputPlans[0]})";

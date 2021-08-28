@@ -14,7 +14,7 @@ namespace BitmaskExpressions
     class BitFromLetter : IBitNames
     {
         /// <inheritdoc />
-        public uint BitFromName(string name)
+        public ulong BitFromName(string name)
         {
             if (name.Length == 1 && name[0] >= 'A' && name[0] <= 'Z')
                 return 1u << (name[0] - 'A');

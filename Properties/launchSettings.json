@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "BitmaskExpressions": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

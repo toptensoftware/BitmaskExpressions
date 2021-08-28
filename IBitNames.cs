@@ -16,6 +16,6 @@ namespace BitmaskExpressions
         /// </summary>
         /// <param name="name">The identifier</param>
         /// <returns>A bitmask bit</returns>
-        uint BitFromName(string name);
+        ulong BitFromName(string name);
     }
 }

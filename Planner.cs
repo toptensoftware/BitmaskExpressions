@@ -63,8 +63,8 @@ namespace BitmaskExpressions
             plans.RemoveAll(x => x.Kind == ExecPlanKind.True);
 
             // Combine any MaskEqual plans
-            uint newMask = 0;
-            uint newValue = 0;
+            ulong newMask = 0;
+            ulong newValue = 0;
             for (int i = plans.Count - 1; i >= 0; i--)
             {
                 var p = plans[i];
@@ -74,12 +74,12 @@ namespace BitmaskExpressions
                     plans.RemoveAt(i);
 
                     // Impossible condition?
-                    if ((newValue & p.Mask & newMask) != (p.Value & p.Mask & newMask))
+                    if ((newValue & p.Mask & newMask) != (p.TestValue & p.Mask & newMask))
                     {
                         return new ExecPlan(ExecPlanKind.False);
                     }
                     newMask |= p.Mask;
-                    newValue |= p.Value;
+                    newValue |= p.TestValue;
                 }
             }
 
@@ -114,8 +114,8 @@ namespace BitmaskExpressions
             plans.RemoveAll(x => x.Kind == ExecPlanKind.False);
 
             // Combine MaskNotEqual plans
-            uint newMask = 0;
-            uint newValue = 0;
+            ulong newMask = 0;
+            ulong newValue = 0;
             for (int i = plans.Count - 1; i >= 0; i--)
             {
                 var p = plans[i];
@@ -125,12 +125,12 @@ namespace BitmaskExpressions
                     plans.RemoveAt(i);
 
                     // Always true condition
-                    if ((newValue & p.Mask & newMask) != (p.Value & p.Mask & newMask))
+                    if ((newValue & p.Mask & newMask) != (p.TestValue & p.Mask & newMask))
                     {
                         return new ExecPlan(ExecPlanKind.True);
                     }
                     newMask |= p.Mask;
-                    newValue |= p.Value;
+                    newValue |= p.TestValue;
                 }
             }
 
@@ -162,10 +162,10 @@ namespace BitmaskExpressions
                     return new ExecPlan(ExecPlanKind.True);
 
                 case ExecPlanKind.MaskEqual:
-                    return new ExecPlan(ExecPlanKind.MaskNotEqual, inPlan.Mask, inPlan.Value);
+                    return new ExecPlan(ExecPlanKind.MaskNotEqual, inPlan.Mask, inPlan.TestValue);
 
                 case ExecPlanKind.MaskNotEqual:
-                    return new ExecPlan(ExecPlanKind.MaskEqual, inPlan.Mask, inPlan.Value);
+                    return new ExecPlan(ExecPlanKind.MaskEqual, inPlan.Mask, inPlan.TestValue);
             }
 
             // Eval directly
